@@ -1,0 +1,99 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\PasswordResetController;
+use App\Http\Controllers\API\NewsController;
+use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\FaqController;
+use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\AdminUserController;
+use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\StudentRequestController;
+use App\Http\Controllers\API\RequestController;
+use App\Http\Controllers\API\NotificationController;
+
+// Get authenticated user info
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+// Auth
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+// Password Reset
+Route::prefix('password')->middleware('throttle:5,1')->group(function () {
+    Route::post('/send-code', [PasswordResetController::class, 'sendCode']);
+    Route::post('/verify-code', [PasswordResetController::class, 'verifyCode']);
+    Route::post('/reset', [PasswordResetController::class, 'resetPassword']);
+});
+
+// News
+Route::middleware('auth:sanctum')->prefix('news')->group(function () {
+    Route::get('/', [NewsController::class, 'index']);
+    Route::post('/', [NewsController::class, 'store']);
+    Route::put('/{news}', [NewsController::class, 'update']);
+    Route::delete('/{news}', [NewsController::class, 'destroy']);
+});
+
+// Events
+Route::middleware('auth:sanctum')->prefix('events')->group(function () {
+    Route::get('/', [EventController::class, 'index']);
+    Route::post('/', [EventController::class, 'store']);
+    Route::put('/{event}', [EventController::class, 'update']);
+    Route::delete('/{event}', [EventController::class, 'destroy']);
+});
+
+// FAQs
+Route::middleware('auth:sanctum')->prefix('faqs')->group(function () {
+    Route::get('/', [FaqController::class, 'index']);
+    Route::post('/', [FaqController::class, 'store']);
+    Route::put('/{id}', [FaqController::class, 'update']);
+    Route::delete('/{id}', [FaqController::class, 'destroy']);
+});
+
+// User profile image
+Route::middleware('auth:sanctum')->put('/user/update-profile-image', [UserController::class, 'updateProfileImage']);
+
+// Profile
+Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
+    Route::get('/', [ProfileController::class, 'profile']);
+    Route::post('/photo', [ProfileController::class, 'uploadPhoto']);
+    Route::delete('/photo', [ProfileController::class, 'deletePhoto']);
+});
+
+// Student Requests
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/student-requests', [StudentRequestController::class, 'index']);
+    Route::post('/student-requests', [StudentRequestController::class, 'store']);
+    Route::delete('/student-requests/{id}', [StudentRequestController::class, 'destroy']);
+});
+
+// Request Types
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/requests', [RequestController::class, 'index']);
+    Route::post('/requests', [RequestController::class, 'store']);
+    Route::put('/requests/{id}', [RequestController::class, 'update']);
+    Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
+});
+
+// Admin Users
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/admin/users', [AdminUserController::class, 'createUser']);
+    Route::patch('/admin/users/{id}/type', [AdminUserController::class, 'changeUserType']);
+    Route::post('/admin/import-users', [AdminUserController::class, 'importUsersFromExcel']);
+
+    Route::get('/admin/student-requests', [AdminUserController::class, 'allStudentRequests']);
+    Route::patch('/admin/student-requests/{id}/accept', [AdminUserController::class, 'acceptStudentRequest']);
+    Route::patch('/admin/student-requests/{id}/reject', [AdminUserController::class, 'rejectStudentRequest']);
+});
+
+// Notifications
+Route::middleware('auth:api')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+});
