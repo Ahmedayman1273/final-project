@@ -32,14 +32,16 @@ class FaqController extends Controller
         ]);
     }
 
-    // Get all FAQs
-    public function index()
+    // Get all FAQs (admin)
+    public function index(Request $request)
     {
-        $faqs = Faq::latest()->get();
+        $user = $request->user();
+        if ($user->type !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
-        return response()->json([
-            'faqs' => $faqs
-        ]);
+        $faqs = Faq::latest()->get();
+        return response()->json(['faqs' => $faqs]);
     }
 
     // Update existing FAQ (admin only)
@@ -84,5 +86,23 @@ class FaqController extends Controller
         $faq->delete();
 
         return response()->json(['message' => 'FAQ deleted successfully.']);
+    }
+
+    // Get all questions only (for chatbot)
+    public function questionsOnly()
+    {
+        $questions = Faq::select('id', 'question')->latest()->get();
+        return response()->json(['questions' => $questions]);
+    }
+
+    // Get answer to a specific question
+    public function getAnswer($id)
+    {
+        $faq = Faq::find($id);
+        if (!$faq) {
+            return response()->json(['message' => 'Question not found.'], 404);
+        }
+
+        return response()->json(['answer' => $faq->answer]);
     }
 }

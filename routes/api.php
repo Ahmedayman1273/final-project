@@ -47,14 +47,19 @@ Route::middleware('auth:sanctum')->prefix('events')->group(function () {
     Route::delete('/{event}', [EventController::class, 'destroy']);
 });
 
-// FAQs
-Route::middleware('auth:sanctum')->prefix('faqs')->group(function () {
-    Route::get('/', [FaqController::class, 'index']);
-    Route::post('/', [FaqController::class, 'store']);
-    Route::put('/{id}', [FaqController::class, 'update']);
-    Route::delete('/{id}', [FaqController::class, 'destroy']);
-});
+   // FAQs (Admin)
+    Route::prefix('faqs')->group(function () {
+        Route::get('/', [FaqController::class, 'index']);
+        Route::post('/', [FaqController::class, 'store']);
+        Route::put('/{id}', [FaqController::class, 'update']);
+        Route::delete('/{id}', [FaqController::class, 'destroy']);
+    });
 
+    // Chatbot (For students/graduates)
+    Route::prefix('chatbot')->group(function () {
+        Route::get('/questions', [FaqController::class, 'questionsOnly']);
+        Route::get('/answer/{id}', [FaqController::class, 'getAnswer']);
+    });
 // User profile image
 Route::middleware('auth:sanctum')->put('/user/update-profile-image', [UserController::class, 'updateProfileImage']);
 
