@@ -48,12 +48,12 @@ Route::middleware('auth:sanctum')->prefix('events')->group(function () {
 });
 
    // FAQs (Admin)
-    Route::prefix('faqs')->group(function () {
+   Route::middleware('auth:sanctum')->prefix('faqs')->group(function (){
         Route::get('/', [FaqController::class, 'index']);
         Route::post('/', [FaqController::class, 'store']);
         Route::put('/{id}', [FaqController::class, 'update']);
         Route::delete('/{id}', [FaqController::class, 'destroy']);
-    });
+        });
 
     // Chatbot (For students/graduates)
     Route::prefix('chatbot')->group(function () {
