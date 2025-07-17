@@ -86,15 +86,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 // Admin Users
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/admin/users', [AdminUserController::class, 'createUser']);
-    Route::patch('/admin/users/{id}/type', [AdminUserController::class, 'changeUserType']);
-    Route::post('/admin/import-users', [AdminUserController::class, 'importUsersFromExcel']);
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    // Users
+    Route::post('/create-user', [AdminUserController::class, 'createUser']);
+    Route::post('/change-user-type/{id}', [AdminUserController::class, 'changeUserType']);
+    Route::post('/import-users', [AdminUserController::class, 'importUsersFromExcel']);
+    // Student Requests (by status)
+    Route::get('/student-requests', [AdminUserController::class, 'allStudentRequests']);
+    Route::get('/student-requests/pending', [AdminUserController::class, 'getPendingRequests']);
+    Route::get('/student-requests/accepted', [AdminUserController::class, 'getAcceptedRequests']);
+    Route::get('/student-requests/rejected', [AdminUserController::class, 'getRejectedRequests']);
+    // Update request status
+    Route::post('/student-requests/{id}/accept', [AdminUserController::class, 'acceptStudentRequest']);
+    Route::post('/student-requests/{id}/reject', [AdminUserController::class, 'rejectStudentRequest']);
+    // Request Types
+    Route::get('/request-types', [AdminUserController::class, 'getAllRequestTypes']);
+    Route::post('/request-types', [AdminUserController::class, 'createRequestType']);        
+    Route::put('/request-types/{id}', [AdminUserController::class, 'updateRequestType']);
+    Route::delete('/request-types/{id}', [AdminUserController::class, 'deleteRequestType']);
 
-    Route::get('/admin/student-requests', [AdminUserController::class, 'allStudentRequests']);
-    Route::patch('/admin/student-requests/{id}/accept', [AdminUserController::class, 'acceptStudentRequest']);
-    Route::patch('/admin/student-requests/{id}/reject', [AdminUserController::class, 'rejectStudentRequest']);
 });
+
 
 // Notifications
 Route::middleware('auth:api')->group(function () {

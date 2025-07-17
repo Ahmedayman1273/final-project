@@ -10,7 +10,7 @@ use App\Models\Request as RequestModel;
 
 class StudentRequestController extends Controller
 {
-    // Get current user's requests
+    // Get all requests for the authenticated user
     public function index(Request $request)
     {
         $user = $request->user();
@@ -18,7 +18,21 @@ class StudentRequestController extends Controller
         $requests = StudentRequest::where('user_id', $user->id)
             ->with('requestType')
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($req) {
+                return [
+                    'id'                => $req->id,
+                    'type'              => $req->requestType->name ?? null,
+                    'status'            => $req->status,
+                    'count'             => $req->count,
+                    'total_price'       => $req->total_price,
+                    'student_name_ar'   => $req->student_name_ar,
+                    'student_name_en'   => $req->student_name_en,
+                    'department'        => $req->department,
+                    'receipt_image'     => asset('storage/' . $req->receipt_image),
+                    'submitted_at'      => $req->created_at->format('Y-m-d H:i'),
+                ];
+            });
 
         return response()->json([
             'status' => 'success',
@@ -26,17 +40,28 @@ class StudentRequestController extends Controller
         ]);
     }
 
-    // Create new request
+    // Store a new request
     public function store(Request $request)
     {
-        \Log::info('Incoming request:', $request->all());
+        $user = $request->user();
 
-        if ($request->hasFile('receipt_image')) {
-            \Log::info('Receipt image received');
-        } else {
-            \Log::warning('Receipt image missing');
+        // Deny requests from web interface
+        if (strtolower($request->header('X-From', 'web')) === 'web') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Submitting requests from web is not allowed.'
+            ], 403);
         }
 
+        // Prevent admins from submitting requests
+        if ($user->type === 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Admins are not allowed to submit requests.'
+            ], 403);
+        }
+
+        // Validate input
         $request->validate([
             'request_id'       => 'required|exists:requests,id',
             'count'            => 'required|integer|min:1',
@@ -46,8 +71,26 @@ class StudentRequestController extends Controller
             'receipt_image'    => 'required|image|max:2048',
         ]);
 
-        // Check for existing pending request of same type
-        $existing = StudentRequest::where('user_id', $request->user()->id)
+        $requestType = RequestModel::find($request->request_id);
+
+        //Prevent students from requesting graduation certificate
+        if ($user->type === 'student' && $requestType->name === 'Graduation Certificate') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Students are not allowed to request a graduation certificate.'
+            ], 403);
+        }
+
+        //  Prevent graduates from requesting enrollment proof
+        if ($user->type === 'graduate' && $requestType->name === 'Enrollment Proof') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Graduates are not allowed to request an enrollment proof.'
+            ], 403);
+        }
+
+        //  Prevent duplicate pending request
+        $existing = StudentRequest::where('user_id', $user->id)
             ->where('request_id', $request->request_id)
             ->where('status', 'pending')
             ->first();
@@ -58,13 +101,15 @@ class StudentRequestController extends Controller
             ], 409);
         }
 
+        // Store receipt image
         $imagePath = $request->file('receipt_image')->store('receipts', 'public');
 
-        $requestType = RequestModel::find($request->request_id);
+        // Calculate total price
         $totalPrice = $requestType->price * $request->count;
 
+        // Create request
         $studentRequest = StudentRequest::create([
-            'user_id'         => $request->user()->id,
+            'user_id'         => $user->id,
             'request_id'      => $request->request_id,
             'count'           => $request->count,
             'total_price'     => $totalPrice,
@@ -81,7 +126,7 @@ class StudentRequestController extends Controller
         ], 201);
     }
 
-    // Delete pending request
+    // Delete a pending request
     public function destroy(Request $request, $id)
     {
         $studentRequest = StudentRequest::find($id);
