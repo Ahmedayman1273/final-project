@@ -4,24 +4,33 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\DB;
+
 use App\Models\Request as RequestModel;
 
 class RequestController extends Controller
 {
-    // Get all requests (admin only)
-    public function index(HttpRequest $request)
-    {
-        if ($request->user()->type !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+   // Get requests (filtered by user type)
+public function index(HttpRequest $request)
+{
+    $user = $request->user();
 
-        $requests = RequestModel::latest()->get();
+    $query = RequestModel::query();
 
-        return response()->json([
-            'status' => 'success',
-            'requests' => $requests
-        ]);
+    if ($user->type === 'student') {
+    $query->where(DB::raw('LOWER(name)'), 'not like', '%graduation certificate%');
+   } elseif ($user->type === 'graduate') {
+    $query->where(DB::raw('LOWER(name)'), 'like', '%graduation certificate%');
     }
+    // admin يشوف الكل
+
+    $requests = $query->latest()->get();
+
+    return response()->json([
+        'status' => 'success',
+        'requests' => $requests
+    ]);
+}
 
     // Create new request (admin only)
     public function store(HttpRequest $request)

@@ -11,18 +11,19 @@ class StudentRequest extends Model
 
     protected $table = 'student_requests';
 
-    protected $fillable = [
-        'user_id',
-        'request_id',
-        'count',
-        'total_price',
-        'receipt_image',
-        'student_name_en',
-        'student_name_ar',
-        'department',
-        'status',
-        'admin_status',
-    ];
+protected $fillable = [
+    'user_id',
+    'request_id',
+    'count',
+    'total_price',
+    'receipt_image',
+    'student_id',       
+    'student_name_ar',
+    'student_name_en',
+    'department',
+    'status',
+];
+
 
     public $timestamps = true;
 

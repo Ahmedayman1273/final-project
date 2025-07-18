@@ -17,6 +17,10 @@ class AdminUserController extends Controller
      // Create new user (student or graduate)
     public function createUser(Request $request)
     {
+
+       if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can create users.'], 403);
+        }
         $exists = [];
 
         if ($request->id && User::find($request->id)) {
@@ -63,6 +67,9 @@ class AdminUserController extends Controller
    // Import users from Excel file
     public function importUsersFromExcel(Request $request)
     {
+             if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can import users.'], 403);
+           }
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls'
         ]);
@@ -114,6 +121,9 @@ class AdminUserController extends Controller
     // Change user type
     public function changeUserType(Request $request, $id)
     {
+               if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can change user types.'], 403);
+         }
         $user = User::find($id);
 
         if (!$user) {
@@ -128,6 +138,33 @@ class AdminUserController extends Controller
         $user->save();
 
         return response()->json(['message' => 'User type updated successfully.', 'user' => $user]);
+    }
+
+    public function createAdmin(Request $request)
+    {
+        if ($request->user()->type !== 'admin') {
+            return response()->json(['message' => 'Only admins can create new admins.'], 403);
+        }
+
+        $request->validate([
+            'name'         => 'required|string|max:255',
+            'email'        => 'required|email|unique:users,email',
+            'password'     => 'required|string|min:6',
+            'phone_number' => 'nullable|string|max:20',
+        ]);
+
+        $admin = User::create([
+            'name'         => $request->name,
+            'email'        => $request->email,
+            'phone_number' => $request->phone_number,
+            'type'         => 'admin',
+            'password'     => Hash::make($request->password),
+        ]);
+
+        return response()->json([
+            'message' => 'Admin created successfully.',
+            'admin'   => $admin
+        ], 201);
     }
 
 
@@ -156,48 +193,67 @@ class AdminUserController extends Controller
     }
 
     // Get all student requests
-    public function allStudentRequests()
-    {
-        $requests = $this->formatRequests(StudentRequest::query());
-
-        return response()->json([
-            'status' => 'success',
-            'requests' => $requests
-        ]);
+    public function allStudentRequests(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
+
+    $requests = $this->formatRequests(StudentRequest::query());
+
+    return response()->json([
+        'status' => 'success',
+        'requests' => $requests
+    ]);
+}
 
     // Get pending student requests
-    public function getPendingRequests()
-    {
-        $requests = $this->formatRequests(StudentRequest::where('admin_status', 'pending'));
-
-        return response()->json([
-            'status' => 'success',
-            'requests' => $requests
-        ]);
+    public function getPendingRequests(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
+
+    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'pending'));
+
+    return response()->json([
+        'status' => 'success',
+        'requests' => $requests
+    ]);
+}
+
 
     // Get accepted student requests
-    public function getAcceptedRequests()
-    {
-        $requests = $this->formatRequests(StudentRequest::where('admin_status', 'accepted'));
-
-        return response()->json([
-            'status' => 'success',
-            'requests' => $requests
-        ]);
+    public function getAcceptedRequests(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
+
+    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'accepted'));
+
+    return response()->json([
+        'status' => 'success',
+        'requests' => $requests
+    ]);
+}
+
 
     // Get rejected student requests
-    public function getRejectedRequests()
-    {
-        $requests = $this->formatRequests(StudentRequest::where('admin_status', 'rejected'));
-
-        return response()->json([
-            'status' => 'success',
-            'requests' => $requests
-        ]);
+  public function getRejectedRequests(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
+
+    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'rejected'));
+
+    return response()->json([
+        'status' => 'success',
+        'requests' => $requests
+    ]);
+}
+
 
     // Accept a student request
     public function acceptStudentRequest(Request $request, $id)
@@ -244,75 +300,95 @@ class AdminUserController extends Controller
     }
 
     // Get all request types
-    public function getAllRequestTypes()
-    {
-        $types = RequestModel::latest()->get();
-
-        return response()->json([
-            'status' => 'success',
-            'types' => $types
-        ]);
+    public function getAllRequestTypes(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access request types.'], 403);
     }
+
+    $types = RequestModel::latest()->get();
+
+    return response()->json([
+        'status' => 'success',
+        'types' => $types
+    ]);
+}
+
 
     // Create new request type
-    public function createRequestType(Request $request)
-    {
-        $request->validate([
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-        ]);
-
-        $requestType = RequestModel::create([
-            'name'        => $request->name,
-            'price'       => $request->price,
-            'description' => $request->description,
-        ]);
-
-        return response()->json([
-            'message' => 'Request type created successfully.',
-            'request_type' => $requestType
-        ], 201);
+  public function createRequestType(Request $request)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can create request types.'], 403);
     }
+
+    $request->validate([
+        'name'        => 'required|string|max:255',
+        'price'       => 'required|numeric|min:0',
+        'description' => 'nullable|string',
+    ]);
+
+    $requestType = RequestModel::create([
+        'name'        => $request->name,
+        'price'       => $request->price,
+        'description' => $request->description,
+    ]);
+
+    return response()->json([
+        'message' => 'Request type created successfully.',
+        'request_type' => $requestType
+    ], 201);
+}
+
 
     // Update request type
-    public function updateRequestType(Request $request, $id)
-    {
-        $requestType = RequestModel::find($id);
-
-        if (!$requestType) {
-            return response()->json(['message' => 'Request type not found.'], 404);
-        }
-
-        $request->validate([
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-        ]);
-
-        $requestType->update([
-            'name'        => $request->name,
-            'price'       => $request->price,
-            'description' => $request->description,
-        ]);
-
-        return response()->json([
-            'message' => 'Request type updated successfully.',
-            'request_type' => $requestType
-        ]);
+   public function updateRequestType(Request $request, $id)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can update request types.'], 403);
     }
+
+    $requestType = RequestModel::find($id);
+
+    if (!$requestType) {
+        return response()->json(['message' => 'Request type not found.'], 404);
+    }
+
+    $request->validate([
+        'name'        => 'required|string|max:255',
+        'price'       => 'required|numeric|min:0',
+        'description' => 'nullable|string',
+    ]);
+
+    $requestType->update([
+        'name'        => $request->name,
+        'price'       => $request->price,
+        'description' => $request->description,
+    ]);
+
+    return response()->json([
+        'message' => 'Request type updated successfully.',
+        'request_type' => $requestType
+    ]);
+}
+
 
     // Delete request type
-    public function deleteRequestType($id)
-    {
-        $requestType = RequestModel::find($id);
-
-        if (!$requestType) {
-            return response()->json(['message' => 'Request type not found.'], 404);
-        }
-
-        $requestType->delete();
-
-        return response()->json(['message' => 'Request type deleted successfully.']);
+  public function deleteRequestType(Request $request, $id)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can delete request types.'], 403);
     }
+
+    $requestType = RequestModel::find($id);
+
+    if (!$requestType) {
+        return response()->json(['message' => 'Request type not found.'], 404);
+    }
+
+    $requestType->delete();
+
+    return response()->json(['message' => 'Request type deleted successfully.']);
+}
+
 }
