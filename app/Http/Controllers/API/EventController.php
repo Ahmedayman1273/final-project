@@ -12,14 +12,30 @@ class EventController extends Controller
     // Get all events
     public function index()
     {
-        return response()->json(Event::orderBy('start_time', 'desc')->get());
+        return response()->json(
+            Event::orderBy('start_time', 'desc')->get()
+        );
     }
 
     // Create a new event (admin only)
     public function store(Request $request)
     {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        // Check if token is missing or invalid
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        // Check if user is not admin
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $request->validate([
@@ -29,10 +45,9 @@ class EventController extends Controller
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('events', 'public');
-        }
+        $imagePath = $request->hasFile('image')
+            ? $request->file('image')->store('events', 'public')
+            : null;
 
         $event = Event::create([
             'title'       => $request->title,
@@ -47,8 +62,20 @@ class EventController extends Controller
     // Update event (admin only)
     public function update(Request $request, Event $event)
     {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $request->validate([
@@ -62,6 +89,7 @@ class EventController extends Controller
             if ($event->image) {
                 Storage::disk('public')->delete($event->image);
             }
+
             $event->image = $request->file('image')->store('events', 'public');
         }
 
@@ -72,24 +100,59 @@ class EventController extends Controller
 
     // Delete event (admin only)
     public function destroy(Event $event)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
+        }
+
+        if ($event->image) {
+            Storage::disk('public')->delete($event->image);
+        }
+
+        $event->delete();
+
+        return response()->json([
+            'message' => 'Event deleted',
+            'events'  => Event::latest()->get([
+                'id', 'title', 'description', 'image', 'start_time', 'created_at'
+            ])
+        ]);
+    }
+
+    // Show single event by ID
+    public function show($id)
 {
-    if (auth()->user()->type !== 'admin') {
-        return response()->json(['error' => 'Unauthorized'], 403);
+    $user = auth()->user();
+
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Unauthorized. Token is missing or invalid.'
+        ], 401);
     }
 
-    if ($event->image) {
-        Storage::disk('public')->delete($event->image);
+    $event = Event::find($id);
+
+    if (!$event) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Record not found.'
+        ], 404);
     }
 
-    $event->delete();
-
-    // Return updated list after delete
-    $allEvents = Event::latest()->get(['id', 'title', 'description', 'image', 'start_time', 'created_at']);
-
-    return response()->json([
-        'message' => 'Event deleted',
-        'events' => $allEvents
-    ]);
+    return response()->json($event);
 }
 
 }

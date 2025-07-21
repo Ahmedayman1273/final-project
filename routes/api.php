@@ -34,18 +34,22 @@ Route::prefix('password')->middleware('throttle:5,1')->group(function () {
 // News
 Route::middleware('auth:sanctum')->prefix('news')->group(function () {
     Route::get('/', [NewsController::class, 'index']);
+    Route::get('/{id}', [NewsController::class, 'show']);
     Route::post('/', [NewsController::class, 'store']);
     Route::put('/{news}', [NewsController::class, 'update']);
     Route::delete('/{news}', [NewsController::class, 'destroy']);
 });
 
+
 // Events
 Route::middleware('auth:sanctum')->prefix('events')->group(function () {
     Route::get('/', [EventController::class, 'index']);
+    Route::get('/{id}', [EventController::class, 'show']);
     Route::post('/', [EventController::class, 'store']);
     Route::put('/{event}', [EventController::class, 'update']);
     Route::delete('/{event}', [EventController::class, 'destroy']);
 });
+
 
    // FAQs (Admin)
    Route::middleware('auth:sanctum')->prefix('faqs')->group(function (){
@@ -94,7 +98,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::patch('/change-user-type/{id}', [AdminUserController::class, 'changeUserType']);
     Route::post('/import-users', [AdminUserController::class, 'importUsersFromExcel']);
     // Student Requests (by status)
-    Route::get('/student-requests', [AdminUserController::class, 'allStudentRequests']);
+    Route::get('/student-requests/pending/{id}', [AdminUserController::class, 'showPendingRequestById']);
     Route::get('/student-requests/pending', [AdminUserController::class, 'getPendingRequests']);
     Route::get('/student-requests/accepted', [AdminUserController::class, 'getAcceptedRequests']);
     Route::get('/student-requests/rejected', [AdminUserController::class, 'getRejectedRequests']);

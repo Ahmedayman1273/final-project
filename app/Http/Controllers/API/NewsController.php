@@ -12,14 +12,61 @@ class NewsController extends Controller
     // Get all news items
     public function index()
     {
-        return response()->json(News::orderBy('created_at', 'desc')->get());
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        return response()->json(
+            News::orderBy('created_at', 'desc')->get()
+        );
+    }
+
+    // Show single news item by ID
+    public function show($id)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        $news = News::find($id);
+
+        if (!$news) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Record not found.'
+            ], 404);
+        }
+
+        return response()->json($news);
     }
 
     // Create news item (admin only)
     public function store(Request $request)
     {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $request->validate([
@@ -28,10 +75,9 @@ class NewsController extends Controller
             'image'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('news', 'public');
-        }
+        $imagePath = $request->hasFile('image')
+            ? $request->file('image')->store('news', 'public')
+            : null;
 
         $news = News::create([
             'title'   => $request->title,
@@ -45,8 +91,20 @@ class NewsController extends Controller
     // Update news item (admin only)
     public function update(Request $request, News $news)
     {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $request->validate([
@@ -59,6 +117,7 @@ class NewsController extends Controller
             if ($news->image) {
                 Storage::disk('public')->delete($news->image);
             }
+
             $news->image = $request->file('image')->store('news', 'public');
         }
 
@@ -68,25 +127,33 @@ class NewsController extends Controller
     }
 
     // Delete news item (admin only)
-   public function destroy(News $news)
-{
-    if (auth()->user()->type !== 'admin') {
-        return response()->json(['error' => 'Unauthorized'], 403);
+    public function destroy(News $news)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
+        }
+
+        if ($news->image) {
+            Storage::disk('public')->delete($news->image);
+        }
+
+        $news->delete();
+
+        return response()->json([
+            'message' => 'News deleted',
+            'news'    => News::latest()->get(['id', 'title', 'content', 'image', 'created_at'])
+        ]);
     }
-
-    if ($news->image) {
-        Storage::disk('public')->delete($news->image);
-    }
-
-    $news->delete();
-
-    // Return updated list after delete
-    $allNews = News::latest()->get(['id', 'title', 'content', 'image', 'created_at']);
-
-    return response()->json([
-        'message' => 'News deleted',
-        'news' => $allNews
-    ]);
-}
-
 }

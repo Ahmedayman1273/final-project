@@ -19,15 +19,31 @@ public function index(Request $request)
     $user = $request->user();
 
     $requests = StudentRequest::where('user_id', $user->id)
-        ->with('requestType') // علشان يرجع نوع الطلب
+        ->with('requestType')
         ->latest()
-        ->get();
+        ->get()
+        ->map(function ($req) {
+            return [
+                'request_id'      => $req->id,
+                'type_id'         => $req->request_id,
+                'type_name'       => $req->requestType->name ?? null,
+                'count'           => $req->count,
+                'total_price'     => $req->total_price,
+                'status'          => $req->status, // pending / approved / rejected
+                'notes'           => $req->notes,
+                'student_name_en' => $req->student_name_en,
+                'student_name_ar' => $req->student_name_ar,
+                'department'      => $req->department,
+                'receipt_image'   => $req->receipt_image,
+            ];
+        });
 
     return response()->json([
         'status' => 'success',
         'requests' => $requests
     ]);
 }
+
 
 
   public function store(Request $request)
@@ -138,7 +154,7 @@ public function index(Request $request)
     // Delete a pending request (only if admin_status is still 'pending')
 public function destroy(Request $request, $id)
 
-{
+ {
     $user = $request->user();
 
     $studentRequest = StudentRequest::find($id);
@@ -170,5 +186,5 @@ public function destroy(Request $request, $id)
         'status' => 'success',
         'message' => 'Request deleted successfully'
     ]);
-}
+ }
 }

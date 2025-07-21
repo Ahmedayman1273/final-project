@@ -4,8 +4,9 @@ namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
-use Illuminate\Http\JsonResponse;
 
 class Handler extends ExceptionHandler
 {
@@ -19,28 +20,46 @@ class Handler extends ExceptionHandler
         'password_confirmation',
     ];
 
-    public function register(): void
-    {
-        $this->renderable(function (Throwable $e, $request) {
-            if ($request->expectsJson()) {
-                if (config('app.debug')) {
-                    return response()->json([
-                        'error' => $e->getMessage(),
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine(),
-                        'trace' => $e->getTraceAsString(),
-                    ], 500);
-                }
-
-                return response()->json([
-                    'message' => 'Something went wrong',
-                ], 500);
-            }
-        });
-    }
-
+    /**
+     * Custom handling for unauthenticated token.
+     */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return response()->json(['message' => 'Unauthenticated.'], 401);
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Unauthorized. Token is missing or invalid.'
+        ], 401);
+    }
+
+    /**
+     * Master exception handler for structured responses.
+     */
+    public function render($request, Throwable $exception)
+    {
+        // Forbidden (e.g. user type is not admin)
+        if ($exception instanceof AccessDeniedHttpException) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. You do not have permission.'
+            ], 403);
+        }
+
+        // Record not found (invalid ID)
+        if ($exception instanceof ModelNotFoundException) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Record not found.'
+            ], 404);
+        }
+
+        return parent::render($request, $exception);
+    }
+
+    /**
+     * Empty default renderable block.
+     */
+    public function register(): void
+    {
+        //
     }
 }

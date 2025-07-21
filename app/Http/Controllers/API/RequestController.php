@@ -5,38 +5,55 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
-
 use App\Models\Request as RequestModel;
 
 class RequestController extends Controller
 {
-   // Get requests (filtered by user type)
-public function index(HttpRequest $request)
-{
-    $user = $request->user();
+    // Get requests (filtered by user type)
+    public function index(HttpRequest $request)
+    {
+        $user = $request->user();
 
-    $query = RequestModel::query();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
 
-    if ($user->type === 'student') {
-    $query->where(DB::raw('LOWER(name)'), 'not like', '%graduation certificate%');
-   } elseif ($user->type === 'graduate') {
-    $query->where(DB::raw('LOWER(name)'), 'like', '%graduation certificate%');
+        $query = RequestModel::query();
+
+        if ($user->type === 'student') {
+            $query->where(DB::raw('LOWER(name)'), 'not like', '%graduation certificate%');
+        } elseif ($user->type === 'graduate') {
+            $query->where(DB::raw('LOWER(name)'), 'like', '%graduation certificate%');
+        }
+
+        $requests = $query->latest()->get();
+
+        return response()->json([
+            'status' => 'success',
+            'requests' => $requests
+        ]);
     }
-    // admin يشوف الكل
-
-    $requests = $query->latest()->get();
-
-    return response()->json([
-        'status' => 'success',
-        'requests' => $requests
-    ]);
-}
 
     // Create new request (admin only)
     public function store(HttpRequest $request)
     {
-        if ($request->user()->type !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $request->validate([
@@ -60,14 +77,29 @@ public function index(HttpRequest $request)
     // Update existing request (admin only)
     public function update(HttpRequest $request, $id)
     {
-        if ($request->user()->type !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $requestModel = RequestModel::find($id);
 
         if (!$requestModel) {
-            return response()->json(['message' => 'Request not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Record not found.'
+            ], 404);
         }
 
         $request->validate([
@@ -91,14 +123,29 @@ public function index(HttpRequest $request)
     // Delete request (admin only)
     public function destroy(HttpRequest $request, $id)
     {
-        if ($request->user()->type !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Token is missing or invalid.'
+            ], 401);
+        }
+
+        if ($user->type !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden. Admins only.'
+            ], 403);
         }
 
         $requestModel = RequestModel::find($id);
 
         if (!$requestModel) {
-            return response()->json(['message' => 'Request not found'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Record not found.'
+            ], 404);
         }
 
         $requestModel->delete();

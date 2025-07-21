@@ -195,14 +195,17 @@ class AdminUserController extends Controller
             });
     }
 
-    // Get all student requests
-    public function allStudentRequests(Request $request)
+
+  // Get all pending requests
+public function getPendingRequests(Request $request)
 {
     if ($request->user()->type !== 'admin') {
         return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
 
-    $requests = $this->formatRequests(StudentRequest::query());
+    $requests = $this->formatRequests(
+        StudentRequest::where('status', 'pending')
+    );
 
     return response()->json([
         'status' => 'success',
@@ -210,14 +213,16 @@ class AdminUserController extends Controller
     ]);
 }
 
-    // Get pending student requests
-    public function getPendingRequests(Request $request)
+// Get all approved requests
+public function getAcceptedRequests(Request $request)
 {
     if ($request->user()->type !== 'admin') {
         return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
 
-    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'pending'));
+    $requests = $this->formatRequests(
+        StudentRequest::where('status', 'approved')
+    );
 
     return response()->json([
         'status' => 'success',
@@ -225,14 +230,16 @@ class AdminUserController extends Controller
     ]);
 }
 
-    // Get accepted student requests
-    public function getAcceptedRequests(Request $request)
+// Get all rejected requests
+public function getRejectedRequests(Request $request)
 {
     if ($request->user()->type !== 'admin') {
         return response()->json(['message' => 'Only admins can access student requests.'], 403);
     }
 
-    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'accepted'));
+    $requests = $this->formatRequests(
+        StudentRequest::where('status', 'rejected')
+    );
 
     return response()->json([
         'status' => 'success',
@@ -240,64 +247,96 @@ class AdminUserController extends Controller
     ]);
 }
 
-    // Get rejected student requests
-  public function getRejectedRequests(Request $request)
+// Accept a student request
+public function acceptStudentRequest(Request $request, $id)
 {
     if ($request->user()->type !== 'admin') {
-        return response()->json(['message' => 'Only admins can access student requests.'], 403);
+        return response()->json(['message' => 'Only admins can update request status.'], 403);
     }
 
-    $requests = $this->formatRequests(StudentRequest::where('admin_status', 'rejected'));
+    $studentRequest = StudentRequest::find($id);
+
+    if (!$studentRequest) {
+        return response()->json(['status' => 'error', 'message' => 'Request not found.'], 404);
+    }
+
+    $request->validate([
+        'delivery_date' => 'required|date'
+    ]);
+
+    $studentRequest->update([
+        'status' => 'approved',
+        'notes'  => 'Delivery date: ' . $request->delivery_date
+    ]);
+
+    return response()->json(['status' => 'success', 'message' => 'Request approved.']);
+}
+
+// Reject a student request
+public function rejectStudentRequest(Request $request, $id)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can update request status.'], 403);
+    }
+
+    $studentRequest = StudentRequest::find($id);
+
+    if (!$studentRequest) {
+        return response()->json(['status' => 'error', 'message' => 'Request not found.'], 404);
+    }
+
+    $request->validate([
+        'reason' => 'required|string|max:255'
+    ]);
+
+    $studentRequest->update([
+        'status' => 'rejected',
+        'notes'  => $request->reason
+    ]);
+
+    return response()->json(['status' => 'success', 'message' => 'Request rejected.']);
+}
+
+// Show specific pending request by ID
+
+public function showPendingRequestById(Request $request, $id)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can view student requests.'], 403);
+    }
+
+    $requestRecord = StudentRequest::where('status', 'pending')
+        ->with(['user', 'requestType'])
+        ->find($id);
+
+    if (!$requestRecord) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Request not found.'
+        ], 404);
+    }
+
+    $formatted = [
+        'request_id'      => $requestRecord->id,
+        'type_id'         => $requestRecord->request_id,
+        'type_name'       => $requestRecord->requestType->name ?? null,
+        'count'           => $requestRecord->count,
+        'total_price'     => $requestRecord->total_price,
+        'status'          => $requestRecord->status,
+        'notes'           => $requestRecord->notes,
+        'student_name_en' => $requestRecord->student_name_en,
+        'student_name_ar' => $requestRecord->student_name_ar,
+        'department'      => $requestRecord->department,
+        'receipt_image'   => $requestRecord->receipt_image,
+    ];
 
     return response()->json([
         'status' => 'success',
-        'requests' => $requests
+        'request' => $formatted
     ]);
 }
 
-    // Accept a student request
-    public function acceptStudentRequest(Request $request, $id)
-    {
-        $studentRequest = StudentRequest::find($id);
 
-        if (!$studentRequest) {
-            return response()->json(['message' => 'Request not found.'], 404);
-        }
-
-        $request->validate([
-            'delivery_date' => 'required|date'
-        ]);
-
-        $studentRequest->update([
-            'admin_status' => 'accepted',
-            'status'       => 'approved',
-            'notes'        => 'Delivery date: ' . $request->delivery_date
-        ]);
-
-        return response()->json(['message' => 'Request accepted successfully.']);
-    }
-
-    // Reject a student request
-    public function rejectStudentRequest(Request $request, $id)
-    {
-        $studentRequest = StudentRequest::find($id);
-
-        if (!$studentRequest) {
-            return response()->json(['message' => 'Request not found.'], 404);
-        }
-
-        $request->validate([
-            'reason' => 'required|string|max:255'
-        ]);
-
-        $studentRequest->update([
-            'admin_status' => 'rejected',
-            'status'       => 'rejected',
-            'notes'        => $request->reason
-        ]);
-
-        return response()->json(['message' => 'Request rejected successfully.']);
-    }
 
     // Get all request types
     public function getAllRequestTypes(Request $request)
