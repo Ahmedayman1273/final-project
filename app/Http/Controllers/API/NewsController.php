@@ -68,18 +68,25 @@ class NewsController extends Controller
     }
 
     // Delete news item (admin only)
-    public function destroy(News $news)
-    {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        if ($news->image) {
-            Storage::disk('public')->delete($news->image);
-        }
-
-        $news->delete();
-
-        return response()->json(['message' => 'News deleted']);
+   public function destroy(News $news)
+{
+    if (auth()->user()->type !== 'admin') {
+        return response()->json(['error' => 'Unauthorized'], 403);
     }
+
+    if ($news->image) {
+        Storage::disk('public')->delete($news->image);
+    }
+
+    $news->delete();
+
+    // Return updated list after delete
+    $allNews = News::latest()->get(['id', 'title', 'content', 'image', 'created_at']);
+
+    return response()->json([
+        'message' => 'News deleted',
+        'news' => $allNews
+    ]);
+}
+
 }

@@ -14,7 +14,7 @@ use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\StudentRequestController;
 use App\Http\Controllers\API\RequestController;
 use App\Http\Controllers\API\NotificationController;
-
+use App\Http\Controllers\API\DashboardController;
 // Get authenticated user info
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
     Route::delete('/photo', [ProfileController::class, 'deletePhoto']);
 });
 
+
 // Student Requests
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student-requests', [StudentRequestController::class, 'index']);
@@ -89,7 +90,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // Users
     Route::post('/create-user', [AdminUserController::class, 'createUser']);
-    Route::post('/admin/create-admin', [AdminUserController::class, 'createAdmin']);
+    Route::post('/create-admin', [AdminUserController::class, 'createAdmin']);
     Route::patch('/change-user-type/{id}', [AdminUserController::class, 'changeUserType']);
     Route::post('/import-users', [AdminUserController::class, 'importUsersFromExcel']);
     // Student Requests (by status)
@@ -115,3 +116,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
 });
+// routes/api.php
+
+
+
+Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
+

@@ -72,16 +72,24 @@ class EventController extends Controller
 
     // Delete event (admin only)
     public function destroy(Event $event)
-    {
-        if (auth()->user()->type !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        if ($event->image) {
-            Storage::disk('public')->delete($event->image);
-        }
-
-        $event->delete();
-        return response()->json(['message' => 'Event deleted']);
+{
+    if (auth()->user()->type !== 'admin') {
+        return response()->json(['error' => 'Unauthorized'], 403);
     }
+
+    if ($event->image) {
+        Storage::disk('public')->delete($event->image);
+    }
+
+    $event->delete();
+
+    // Return updated list after delete
+    $allEvents = Event::latest()->get(['id', 'title', 'description', 'image', 'start_time', 'created_at']);
+
+    return response()->json([
+        'message' => 'Event deleted',
+        'events' => $allEvents
+    ]);
+}
+
 }

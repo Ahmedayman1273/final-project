@@ -13,12 +13,14 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        // Check if a temporary display name is sent from frontend
+        $displayName = $request->query('custom_name', $user->name);
+
         return response()->json([
-            'name'               => $user->name,
+            'name'               => $displayName,
             'email'              => $user->email,
             'phone_number'       => $user->phone_number,
             'major'              => $user->major,
-            'type'               => ucfirst($user->type),
             'profile_photo_url'  => $user->profile_photo_path
                 ? asset('storage/' . $user->profile_photo_path)
                 : asset('images/default_avatar.png'),

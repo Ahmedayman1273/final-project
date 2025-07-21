@@ -63,7 +63,6 @@ class AdminUserController extends Controller
         ], 201);
     }
 
-
    // Import users from Excel file
     public function importUsersFromExcel(Request $request)
     {
@@ -116,8 +115,6 @@ class AdminUserController extends Controller
         }
     }
 
-
-
     // Change user type
     public function changeUserType(Request $request, $id)
     {
@@ -140,34 +137,40 @@ class AdminUserController extends Controller
         return response()->json(['message' => 'User type updated successfully.', 'user' => $user]);
     }
 
+    //creat new admin
     public function createAdmin(Request $request)
-    {
-        if ($request->user()->type !== 'admin') {
-            return response()->json(['message' => 'Only admins can create new admins.'], 403);
-        }
-
-        $request->validate([
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email',
-            'password'     => 'required|string|min:6',
-            'phone_number' => 'nullable|string|max:20',
-        ]);
-
-        $admin = User::create([
-            'name'         => $request->name,
-            'email'        => $request->email,
-            'phone_number' => $request->phone_number,
-            'type'         => 'admin',
-            'password'     => Hash::make($request->password),
-        ]);
-
-        return response()->json([
-            'message' => 'Admin created successfully.',
-            'admin'   => $admin
-        ], 201);
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can create new admins.'], 403);
     }
 
+    $validator = Validator::make($request->all(), [
+        'name'         => 'required|string|max:255',
+        'email'        => 'required|email|unique:users,email',
+        'password'     => 'required|string|min:6',
+        'phone_number' => 'nullable|string|max:20',
+    ]);
 
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $admin = User::create([
+        'name'         => $request->name,
+        'email'        => $request->email,
+        'phone_number' => $request->phone_number,
+        'type'         => 'admin',
+        'password'     => Hash::make($request->password),
+    ]);
+
+    return response()->json([
+        'message' => 'Admin created successfully.',
+        'admin'   => $admin
+    ], 201);
+}
 
     // Helper to format student request output
     private function formatRequests($query)
@@ -222,7 +225,6 @@ class AdminUserController extends Controller
     ]);
 }
 
-
     // Get accepted student requests
     public function getAcceptedRequests(Request $request)
 {
@@ -238,7 +240,6 @@ class AdminUserController extends Controller
     ]);
 }
 
-
     // Get rejected student requests
   public function getRejectedRequests(Request $request)
 {
@@ -253,7 +254,6 @@ class AdminUserController extends Controller
         'requests' => $requests
     ]);
 }
-
 
     // Accept a student request
     public function acceptStudentRequest(Request $request, $id)
@@ -314,7 +314,6 @@ class AdminUserController extends Controller
     ]);
 }
 
-
     // Create new request type
   public function createRequestType(Request $request)
 {
@@ -339,7 +338,6 @@ class AdminUserController extends Controller
         'request_type' => $requestType
     ], 201);
 }
-
 
     // Update request type
    public function updateRequestType(Request $request, $id)
@@ -371,7 +369,6 @@ class AdminUserController extends Controller
         'request_type' => $requestType
     ]);
 }
-
 
     // Delete request type
   public function deleteRequestType(Request $request, $id)
