@@ -107,6 +107,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::patch('/student-requests/{id}/reject', [AdminUserController::class, 'rejectStudentRequest']);
     // Request Types
     Route::get('/request-types', [AdminUserController::class, 'getAllRequestTypes']);
+    Route::get('/request-types/{id}', [AdminUserController::class, 'getRequestTypeById']);
     Route::post('/request-types', [AdminUserController::class, 'createRequestType']);
     Route::put('/request-types/{id}', [AdminUserController::class, 'updateRequestType']);
     Route::delete('/request-types/{id}', [AdminUserController::class, 'deleteRequestType']);
@@ -121,6 +122,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
 });
 // routes/api.php
+
 
 
 

@@ -427,4 +427,23 @@ public function showPendingRequestById(Request $request, $id)
     return response()->json(['message' => 'Request type deleted successfully.']);
 }
 
+public function getRequestTypeById(Request $request, $id)
+{
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access this.'], 403);
+    }
+
+    $requestType = \App\Models\Request::find($id);
+
+    if (!$requestType) {
+        return response()->json(['message' => 'Request type not found.'], 404);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'request_type' => $requestType
+    ]);
+}
+
+
 }

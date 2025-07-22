@@ -152,4 +152,26 @@ class RequestController extends Controller
 
         return response()->json(['message' => 'Request deleted successfully']);
     }
+
+    // Get a single request type by ID (admin only)
+public function getRequestTypeById(Request $request, $id)
+{
+    // Check if user is admin
+    if ($request->user()->type !== 'admin') {
+        return response()->json(['message' => 'Only admins can access this.'], 403);
+    }
+
+    // Find the request type
+    $requestType = \App\Models\Request::find($id);
+
+    if (!$requestType) {
+        return response()->json(['message' => 'Request type not found.'], 404);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'request_type' => $requestType
+    ]);
+}
+
 }
