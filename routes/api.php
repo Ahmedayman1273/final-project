@@ -111,6 +111,8 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('/request-types', [AdminUserController::class, 'createRequestType']);
     Route::put('/request-types/{id}', [AdminUserController::class, 'updateRequestType']);
     Route::delete('/request-types/{id}', [AdminUserController::class, 'deleteRequestType']);
+    // admin dashboard
+    Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
 });
 
@@ -123,8 +125,4 @@ Route::middleware('auth:api')->group(function () {
 });
 // routes/api.php
 
-
-
-
-Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
 
